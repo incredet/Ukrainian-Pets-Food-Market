@@ -1,0 +1,158 @@
+---
+title: "Untitled"
+output: html_document
+date: "2024-04-19"
+---
+
+```{r}
+# install.packages("AER")
+# install.packages("plm")
+```
+
+```{r}
+library(AER)
+library(plm)
+```
+
+```{r}
+data <- read.csv("df_export.csv")
+data
+```
+
+```{r}
+model1 <- plm(log(export_volume_units) ~ war + price, data = data, index = c('observation', 'time.period'), model="within")
+summary(model1)
+```
+
+```{r}
+model1 <- plm(units_increase ~ war + price, data = data, index = c('observation', 'time.period'), model="within")
+summary(model1)
+```
+
+```{r}
+model_fixed <- plm(log(export_volume_units) ~ war + price, data = data, index = c('observation', 'time.period'), model="within")
+summary(model_fixed)
+```
+
+```{r}
+model_random <- plm(log(export_volume_units) ~ 
+                      war + price + export_volume_tons + 
+                      category_dry_cats_and_dogs +
+                      category_treats + pet_type_cats +
+                      price_segment_economy + price_segment_middle +
+                      package_type_pouch, 
+                      data = data, index = c('observation', 'time.period'), model="random")
+summary(model_random)
+```
+
+Отут було б добре було вибрати найкращі independent змінні
+
+Чи можна порівнювати ці модельки? (почитати про цей тест)
+
+```{r}
+phtest(model_fixed,model_random)
+```
+
+```{r}
+wald_result <- waldtest(model_random, c('category_dry_cats_and_dogs', 'category_treats'))
+print(wald_result)
+```
+
+```{r}
+model_random2 = plm(log(export_volume_units) ~ 
+                      war + price + export_volume_tons + 
+                      pet_type_cats + price_segment_economy + 
+                      price_segment_middle + package_type_pouch, 
+                      data = data, index = c('observation', 'time.period'), model="random")
+summary(model_random2)
+```
+
+Dropping export_volume_tons from the model
+
+```{r}
+model_random3 = plm(log(export_volume_units) ~ 
+                      war + price + pet_type_cats + 
+                      price_segment_economy + 
+                      price_segment_middle + package_type_pouch, 
+                      data = data, index = c('observation', 'time.period'), model="random")
+summary(model_random3)
+```
+
+```{r}
+xnames <- c()
+wald_result <- waldtest(model_random3, c('price_segment_economy', 'price_segment_middle'))
+print(wald_result)
+```
+
+```{r}
+data_internal <- read.csv("df_internal.csv")
+head(data_internal)
+```
+
+```{r}
+final_model_random = plm(log(export_volume_units) ~ 
+                      war + price + pet_type_cats + package_type_pouch, 
+                      data = data, index = c('observation', 'time.period'), model="random")
+summary(final_model_random)
+```
+
+```{r}
+phtest(model_fixed,final_model_random)
+```
+
+```{r}
+final_model_random = plm(units_increase ~ 
+                      war + price + pet_type_cats + package_type_pouch, 
+                      data = data, index = c('observation', 'time.period'), model="random")
+summary(final_model_random)
+```
+
+## INTERNAL MARKET
+
+```{r}
+data_internal <- read.csv("df_internal.csv")
+data_internal
+```
+
+```{r}
+model_random_internal <- plm(log(volume_units) ~ volume_tons + war + price + category_dry_cats_and_dogs + category_treats + manufacturer_PP_Hal_Euro_Contract+ manufacturer_TOV_KORMOTECH + manufacturer_TOV_PTF_TECHNO + pet_type_cats + price_segment_economy + price_segment_middle + package_type_can + package_type_glass_jar + package_type_pack + package_type_pouch, data = data_internal, index = c('observation', 'time.period'), model="random")
+summary(model_random_internal)
+```
+
+```{r}
+wald_result <- waldtest(model_random_internal, c('manufacturer_PP_Hal_Euro_Contract',                                   'manufacturer_TOV_KORMOTECH', 'manufacturer_TOV_PTF_TECHNO'))
+print(wald_result)
+```
+
+```{r}
+model_random_internal <- plm(log(volume_units) ~ volume_tons + war + price + category_dry_cats_and_dogs + category_treats + pet_type_cats + price_segment_economy + price_segment_middle + package_type_can + package_type_glass_jar + package_type_pack + package_type_pouch, data = data_internal, index = c('observation', 'time.period'), model="random")
+summary(model_random_internal)
+```
+
+Dropping price_segment_economy. Economy&premium is the base group now.
+
+```{r}
+model_random_internal <- plm(log(volume_units) ~ volume_tons + war + price + category_dry_cats_and_dogs + category_treats + pet_type_cats + price_segment_middle + package_type_can + package_type_glass_jar + package_type_pack + package_type_pouch, data = data_internal, index = c('observation', 'time.period'), model="random")
+summary(model_random_internal)
+```
+
+```{r}
+model_random_internal <- plm(log(volume_units) ~ volume_tons + war + category_dry_cats_and_dogs + category_treats + pet_type_cats + price_segment_middle + package_type_can + package_type_glass_jar + package_type_pack + package_type_pouch, data = data_internal, index = c('observation', 'time.period'), model="random")
+summary(model_random_internal)
+```
+
+The same for increase:
+
+```{r}
+model_random_internal <- plm(units_increase ~ volume_tons + war + price + category_dry_cats_and_dogs + category_treats + manufacturer_PP_Hal_Euro_Contract+ manufacturer_TOV_KORMOTECH + manufacturer_TOV_PTF_TECHNO + pet_type_cats + price_segment_economy + price_segment_middle + package_type_can + package_type_glass_jar + package_type_pack + package_type_pouch, data = data_internal, index = c('observation', 'time.period'), model="random")
+summary(model_random_internal)
+```
+
+```{r}
+model_fixed_internal <- plm(units_increase ~ volume_tons + war + price + category_dry_cats_and_dogs + category_treats + manufacturer_PP_Hal_Euro_Contract+ manufacturer_TOV_KORMOTECH + manufacturer_TOV_PTF_TECHNO + pet_type_cats + price_segment_economy + price_segment_middle + package_type_can + package_type_glass_jar + package_type_pack + package_type_pouch, data = data_internal, index = c('observation', 'time.period'), model="within")
+summary(model_fixed_internal)
+```
+
+```{r}
+phtest(model_fixed_internal,model_random_)
+```
